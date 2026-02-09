@@ -1,0 +1,152 @@
+
+        let transacoesGlobais = [];
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                await carregarHistorico(user.uid);
+            } else {
+                window.location.href = "login.html";
+            }
+        });
+
+        async function carregarHistorico(uid) {
+            transacoesGlobais = [];
+            
+            try {
+                // Função auxiliar para buscar
+                const buscarColecao = async (nome, campoFiltro) => {
+                    const q = query(collection(db, nome), where(campoFiltro, "==", uid));
+                    return await getDocs(q);
+                };
+
+                // Buscamos apenas SAQUES e HISTORICO GERAL
+                // NÃO buscamos mais em "investimentos" para evitar a duplicação
+                const [snapSaques, snapGeral] = await Promise.all([
+                    buscarColecao("saques", "userId"),
+                    buscarColecao("historico", "userId")
+                ]);
+
+                // 1. PROCESSAR SAQUES
+                snapSaques.forEach(doc => {
+                    const d = doc.data();
+                    transacoesGlobais.push({
+                        categoria: 'saque', // Usado para o filtro
+                        titulo: 'Saque PIX',
+                        valor: d.valorSolicitado || d.valor || 0,
+                        data: d.timestamp?.toDate() || new Date(),
+                        status: d.status || 'pendente',
+                        isNegative: true // Saques são sempre vermelhos
+                    });
+                });
+
+                // 2. PROCESSAR O HISTÓRICO GERAL (Depósitos, Compras, Lucros)
+                snapGeral.forEach(doc => {
+                    const d = doc.data();
+                    
+                    let valor = Number(d.valor);
+                    let isNegative = false;
+                    let categoriaFiltro = 'rendimento';
+                    let tituloExibicao = d.tipo || 'Transação';
+
+                    // LÓGICA DE CLASSIFICAÇÃO E SINAL
+                    
+                    if (d.tipo === 'Depósito') {
+                        categoriaFiltro = 'deposito';
+                        isNegative = false;
+                    } 
+                    else if (d.tipo === 'Plano Ativado' || d.tipo === 'Investimento') {
+                        // Se for compra de plano, TEM que ser negativo (Saída)
+                        categoriaFiltro = 'ativação';
+                        tituloExibicao = 'Plano Ativado';
+                        isNegative = true; 
+                        
+                        // Correção visual se o valor vier positivo do banco (bugs antigos)
+                        if (valor > 0) valor = valor * -1;
+                    } 
+                    else if (d.tipo === 'Rendimento' || d.tipo === 'Indicação') {
+                        categoriaFiltro = 'rendimento';
+                        isNegative = false;
+                    }
+                    else if (valor < 0) {
+                        // Qualquer outra coisa negativa
+                        categoriaFiltro = 'ativação';
+                        isNegative = true;
+                    }
+
+                    transacoesGlobais.push({
+                        categoria: categoriaFiltro,
+                        titulo: tituloExibicao,
+                        valor: Math.abs(valor), // Guardamos absoluto para formatar depois
+                        data: d.data?.toDate() || d.timestamp?.toDate() || new Date(),
+                        status: 'concluido',
+                        isNegative: isNegative
+                    });
+                });
+
+                // ORDENAR: Mais recente primeiro
+                transacoesGlobais.sort((a, b) => b.data - a.data);
+
+                // EXIBIR NA TELA
+                renderizar(transacoesGlobais);
+
+            } catch (error) {
+                console.error("Erro ao carregar histórico:", error);
+                document.getElementById('lista-transacoes').innerHTML = 
+                    "<p style='text-align:center; color:#555; margin-top:20px;'>Erro de conexão.</p>";
+            }
+        }
+
+        function renderizar(lista) {
+            const container = document.getElementById('lista-transacoes');
+            container.innerHTML = '';
+
+            if (lista.length === 0) {
+                container.innerHTML = "<p style='text-align:center; color:#555; margin-top:50px;'>Nenhuma transação encontrada.</p>";
+                return;
+            }
+
+            lista.forEach(t => {
+                // Formatação da Data
+                const dataF = t.data.toLocaleDateString('pt-BR', { 
+                    day: '2-digit', month: '2-digit', 
+                    hour: '2-digit', minute: '2-digit' 
+                });
+
+                // Definição de Cores e Sinais
+                const corClass = t.isNegative ? 'minus' : 'plus';
+                const sinal = t.isNegative ? '-' : '+';
+                
+                // Definição da badge de status
+                let statusClass = 'status-concluido';
+                if (t.status === 'pendente') statusClass = 'status-pendente';
+                if (t.status === 'falha' || t.status === 'rejeitado') statusClass = 'status-erro';
+
+                container.innerHTML += `
+                    <div class="transaction-card">
+                        <div class="trans-info">
+                            <h4>${t.titulo} <span class="status-pill ${statusClass}">${t.status}</span></h4>
+                            <small>${dataF}</small>
+                        </div>
+                        <div class="amount ${corClass}">${sinal} R$ ${parseFloat(t.valor).toFixed(2).replace('.', ',')}</div>
+                    </div>
+                `;
+            });
+        }
+
+        // FUNÇÃO DE FILTRO DAS ABAS
+        window.filtrar = (tipo, e) => {
+            // Atualiza visual dos botões
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            if(e) e.target.classList.add('active');
+            
+            // Filtra a lista
+            if (tipo === 'todos') {
+                renderizar(transacoesGlobais);
+            } else {
+                const filtrados = transacoesGlobais.filter(t => t.categoria === tipo);
+                renderizar(filtrados);
+            }
+        };
+    </script>
+</body>
+</html>
