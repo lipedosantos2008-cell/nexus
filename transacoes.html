@@ -1,3 +1,203 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Histórico - Nexus</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: linear-gradient(180deg, #1a0505 0%, #000000 100%);
+            --card: rgba(255, 255, 255, 0.05);
+            --green: #2ecc71;
+            --red: #e74c3c;
+            --gold: #FFD700;
+            --skeleton-bg: rgba(255, 255, 255, 0.08);
+        }
+
+        /* REMOÇÃO TOTAL DE CONTORNOS E BRILHOS */
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            font-family: 'Inter', sans-serif; 
+            outline: none !important; 
+            -webkit-tap-highlight-color: transparent; 
+        }
+        
+        body { 
+            background: var(--bg); 
+            color: white; 
+            padding: 20px; 
+            padding-bottom: 100px; 
+            min-height: 100vh; 
+        }
+        
+        /* Cabeçalho */
+        .header { display: flex; align-items: center; margin-bottom: 25px; gap: 15px; }
+        .header a { color: white; text-decoration: none; font-size: 1.2rem; transition: 0.3s; }
+        .header a:active { transform: scale(0.9); }
+        .header h3 { font-size: 1.1rem; font-weight: 700; }
+        .header h3 span { color: var(--red); }
+
+        /* Filtros */
+        .tabs { 
+            display: flex; 
+            gap: 8px; 
+            margin-bottom: 20px; 
+            overflow-x: auto; 
+            padding-bottom: 5px; 
+            scrollbar-width: none; 
+        }
+        .tabs::-webkit-scrollbar { display: none; }
+        
+        .tab-btn { 
+            flex: none; 
+            padding: 10px 18px; 
+            border-radius: 12px; 
+            border: 1px solid rgba(255,255,255,0.1);
+            background: var(--card); 
+            color: #888; 
+            cursor: pointer; 
+            font-size: 0.75rem; 
+            white-space: nowrap;
+            transition: 0.3s;
+        }
+
+        .tab-btn.active { 
+            background: var(--red); 
+            color: white; 
+            border-color: var(--red); 
+            font-weight: bold; 
+            box-shadow: 0 4px 10px rgba(231, 76, 60, 0.2);
+        }
+        
+        .tab-btn:active { transform: scale(0.95); }
+
+        /* Cartão de Transação */
+        .transaction-card {
+            background: var(--card); 
+            border: 1px solid rgba(255,255,255,0.05);
+            padding: 18px; 
+            border-radius: 20px; 
+            margin-bottom: 12px;
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            animation: slideUp 0.4s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .trans-info h4 { font-size: 0.85rem; margin-bottom: 4px; color: #fff; display: flex; align-items: center; gap: 8px; }
+        .trans-info small { color: #666; font-size: 0.7rem; }
+        
+        .amount { font-weight: 700; font-size: 0.95rem; }
+        .amount.plus { color: var(--green); }
+        .amount.minus { color: var(--red); }
+        
+        .status-pill { font-size: 0.55rem; padding: 2px 6px; border-radius: 6px; text-transform: uppercase; font-weight: 800; }
+        .status-pendente { background: #f39c12; color: #000; }
+        .status-concluido { background: var(--green); color: #000; }
+        .status-erro { background: var(--red); color: #fff; }
+
+        /* Efeito Skeleton (Carregamento) */
+        .skeleton {
+            height: 78px; 
+            background: var(--skeleton-bg); 
+            border-radius: 20px; 
+            margin-bottom: 12px;
+            position: relative; 
+            overflow: hidden;
+        }
+        .skeleton::after {
+            content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+            animation: shimmer 1.6s infinite;
+        }
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        /* Menu Inferior */
+        .nav-bottom { 
+            position: fixed; 
+            bottom: 0; 
+            left: 0; 
+            width: 100%; 
+            background: #000; 
+            display: flex; 
+            justify-content: space-around; 
+            padding: 12px 0; 
+            border-top: 1px solid rgba(255,255,255,0.1); 
+            z-index: 1000; 
+            height: 75px; 
+            align-items: center;
+        }
+        .nav-item { 
+            color: #555; 
+            text-align: center; 
+            text-decoration: none; 
+            font-size: 0.7rem; 
+            flex: 1; 
+            transition: 0.3s;
+        }
+        .nav-item i { display: block; font-size: 1.3rem; margin-bottom: 4px; }
+        .nav-item.active { color: var(--red); }
+        .nav-item:active { transform: scale(0.9); }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <a href="perfil.html"><i class="fas fa-arrow-left"></i></a>
+        <h3><span>Nexus</span>Histórico</h3>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="filtrar('todos', event)">Tudo</button>
+        <button class="tab-btn" onclick="filtrar('deposito', event)">Depósitos (+)</button>
+        <button class="tab-btn" onclick="filtrar('rendimento', event)">Lucros (+)</button>
+        <button class="tab-btn" onclick="filtrar('saque', event)">Saques (-)</button>
+        <button class="tab-btn" onclick="filtrar('ativação', event)">Ativações</button>
+    </div>
+
+    <div id="lista-transacoes">
+        <div class="skeleton"></div>
+        <div class="skeleton"></div>
+        <div class="skeleton"></div>
+        <div class="skeleton"></div>
+    </div>
+
+    <nav class="nav-bottom">
+        <a href="home.html" class="nav-item"><i class="fas fa-home"></i>Início</a>
+        <a href="planos.html" class="nav-item"><i class="fas fa-chart-pie"></i>Planos</a>
+        <a href="indicacao.html" class="nav-item"><i class="fas fa-share-alt"></i>Indicar</a>
+        <a href="perfil.html" class="nav-item active"><i class="fas fa-user-alt"></i>Perfil</a>
+    </nav>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDKDFw7khZzM9hIX7xbbrbFQeESiCLnmOw",
+    authDomain: "monety-site-9175f.firebaseapp.com",
+    projectId: "monety-site-9175f",
+    storageBucket: "monety-site-9175f.firebasestorage.app",
+    messagingSenderId: "840821848803",
+    appId: "1:840821848803:web:b99a5528e4bb925518a3d6"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
 
         let transacoesGlobais = [];
 
