@@ -183,7 +183,7 @@
         </div>
 
         <div class="amount-grid">
-            <div class="amount-option" onclick="setAmount(1, this)">R$ 1</div>
+            <div class="amount-option" onclick="setAmount(1, this)">R$ 30</div>
             <div class="amount-option" onclick="setAmount(75, this)">R$ 75</div>
             <div class="amount-option" onclick="setAmount(100, this)">R$ 100</div>
             <div class="amount-option" onclick="setAmount(150, this)">R$ 150</div>
@@ -195,7 +195,7 @@
             <label>Valor do depósito:</label>
             <div class="input-wrapper">
                 <span>R$</span>
-                <input type="number" id="deposito-valor" placeholder="50.00">
+                <input type="number" id="deposito-valor" placeholder="30.00">
             </div>
         </div>
 
@@ -323,7 +323,7 @@
     const valor = parseFloat(valorInput.value);
     const btn = document.getElementById('btn-gerar');
 
-    if (isNaN(valor) || valor < 1) {
+    if (isNaN(valor) || valor < 30) {
         return Swal.fire({ icon: 'error', title: 'Valor Inválido', text: 'Mínimo R$ 50,00', background: '#1a0505', color: '#fff' });
     }
 
