@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investir - Nexus</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <style>
+        :root {
+            --bg: linear-gradient(180deg, #1a0505 0%, #000000 100%);
+            --red: #e74c3c;
+            --green: #2ecc71;
+            --gold: #FFD700;
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        /* REMOVENDO O CONTORNO AZUL DE SELEÇÃO E FOCO */
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            font-family: 'Inter', sans-serif; 
+            outline: none !important; 
+            -webkit-tap-highlight-color: transparent; 
+        }
+
+        body { background: var(--bg); color: white; padding: 20px; padding-bottom: 110px; min-height: 100vh; }
+
+        .header { text-align: center; margin: 10px 0 25px 0; }
+        .header h2 { font-size: 1.4rem; font-weight: 700; }
+        .header h2 span { color: var(--red); }
+        .header p { font-size: 0.8rem; color: #888; margin-top: 5px; }
+
+        .balance-card {
+            background: var(--glass); border-radius: 20px; padding: 15px;
+            text-align: center; margin-bottom: 25px; border: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+        }
+        .balance-card small { color: #888; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; }
+        .balance-card div { font-size: 1.5rem; font-weight: bold; color: #fff; margin-top: 5px; }
+
+        .plans-list { display: flex; flex-direction: column; gap: 25px; }
+
+        .plan-card {
+            background: var(--glass); 
+            border: 1px solid var(--border);
+            border-radius: 28px; padding: 30px 20px; 
+            display: flex; flex-direction: column; align-items: center; text-align: center; 
+            position: relative; overflow: hidden;
+            backdrop-filter: blur(15px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .duration-tag {
+            position: absolute; top: 0; right: 0; background: var(--red);
+            font-size: 0.65rem; font-weight: 900; padding: 8px 20px;
+            border-bottom-left-radius: 20px; text-transform: uppercase;
+        }
+
+        .plan-card h3 { font-size: 0.75rem; color: var(--red); margin-bottom: 5px; letter-spacing: 3px; font-weight: 900; }
+        .min-invest { font-size: 0.65rem; color: #666; text-transform: uppercase; margin-bottom: 10px; }
+        .plan-card .price { font-size: 2.8rem; font-weight: 900; color: #fff; margin-bottom: 20px; letter-spacing: -1px; }
+
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; width: 100%; gap: 12px; margin-bottom: 20px; }
+        .info-item { background: rgba(255,255,255,0.03); padding: 12px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.05); }
+        .info-item span { font-size: 0.6rem; color: #888; text-transform: uppercase; display: block; margin-bottom: 4px; }
+        .info-item strong { font-size: 0.9rem; color: #fff; }
+
+        .total-box { width: 100%; background: rgba(46, 204, 113, 0.08); border: 1px solid rgba(46, 204, 113, 0.2); padding: 15px; border-radius: 18px; margin-bottom: 25px; }
+        .total-box span { font-size: 0.65rem; color: var(--green); text-transform: uppercase; font-weight: 700; display: block; }
+        .total-box strong { font-size: 1.2rem; color: var(--green); display: block; margin-top: 2px; }
+        
+        .btn-buy { background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; border: none; padding: 18px; border-radius: 18px; font-weight: 900; cursor: pointer; width: 100%; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 8px 20px rgba(231, 76, 60, 0.3); transition: 0.3s; }
+        .btn-disabled { background: #444 !important; color: #888 !important; cursor: not-allowed !important; box-shadow: none !important; }
+
+        /* NAV BOTTOM COM EFEITO VIDRO VERMELHO NO ATIVO */
+        .nav-bottom { 
+            position: fixed; 
+            bottom: 0; 
+            left: 0; 
+            width: 100%; 
+            background: rgba(0, 0, 0, 0.9); 
+            display: flex; 
+            justify-content: space-around; 
+            padding: 12px 0; 
+            border-top: 1px solid rgba(255,255,255,0.1); 
+            backdrop-filter: blur(10px);
+            z-index: 10000;
+            height: 80px;
+            align-items: center;
+        }
+        .nav-item { 
+            color: #555; 
+            text-align: center; 
+            text-decoration: none; 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 5px;
+            padding: 8px 0;
+            border-radius: 15px;
+            transition: 0.3s;
+            margin: 0 5px;
+        }
+        .nav-item i { font-size: 1.3rem; }
+        .nav-item span { font-size: 0.7rem; }
+
+        /* ITEM ATIVO: EFEITO VIDRO VERMELHO */
+        .nav-item.active { 
+            color: #fff; 
+            background: rgba(231, 76, 60, 0.2); 
+            border: 1px solid rgba(231, 76, 60, 0.4);
+            box-shadow: 0 0 15px rgba(231, 76, 60, 0.2);
+        }
+        .nav-item.active i { color: var(--red); }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2><span>Nexus</span>Invest</h2>
+        <p>Escolha o melhor plano para você</p>
+    </div>
+
+    <div class="balance-card">
+        <small>Saldo para Investimento (Depósitos)</small>
+        <div id="user-balance">R$ 0,00</div>
+    </div>
+
+    <div id="container-planos" class="plans-list"></div>
+
+    <nav class="nav-bottom">
+        <a href="home.html" class="nav-item"><i class="fas fa-home"></i>Início</a>
+        <a href="planos.html" class="nav-item active"><i class="fas fa-chart-pie"></i>Planos</a>
+        <a href="indicacao.html" class="nav-item"><i class="fas fa-share-alt"></i>Indicar</a>
+        <a href="perfil.html" class="nav-item"><i class="fas fa-user-alt"></i>Perfil</a>
+    </nav>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc, updateDoc, collection, addDoc, Timestamp, increment, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDKDFw7khZzM9hIX7xbbrbFQeESiCLnmOw",
+        authDomain: "monety-site-9175f.firebaseapp.com",
+        projectId: "monety-site-9175f",
+        storageBucket: "monety-site-9175f.firebasestorage.app",
+        messagingSenderId: "840821848803",
+        appId: "1:840821848803:web:b99a5528e4bb925518a3d6"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let saldoAtual = 0;
+    let uidUsuario = null;
+
+    const listaPlanos = [
+        { nome: 'MINI', valor: 30, dias: 60, diario: 6, total: 360, ativo: true },
+        { nome: 'BRONZE', valor: 50, dias: 30, diario: 10, total: 300, ativo: true },
+        { nome: 'START', valor: 100, dias: 30, diario: 20, total: 600, ativo: true },
+        { nome: 'PRATA', valor: 200, dias: 30, diario: 40, total: 1200, ativo: true },
+        { nome: 'SPEED', valor: 350, dias: 30, diario: 70, total: 2100, ativo: true },
+        { nome: 'OURO', valor: 450, dias: 30, diario: 90, total: 2700, ativo: true },
+        { nome: 'ADVANCED', valor: 500, dias: 30, diario: 100, total: 3000, ativo: true },
+        { nome: 'VITALITY', valor: 700, dias: 30, diario: 140, total: 4200, ativo: true },
+        { nome: 'PREMIUM', valor: 1000, dias: 30, diario: 200, total: 6000, ativo: true },
+        { nome: 'VIP', valor: 2000, dias: 30, diario: 400, total: 12000, ativo: true },
+        { nome: 'ELITE', valor: 3000, dias: 30, diario: 0, total: 0, ativo: false },
+        { nome: 'ULTIMATE', valor: 5000, dias: 30, diario: 0, total: 0, ativo: false }
+    ];
+
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            uidUsuario = user.uid;
+            await carregarDados();
+            await verificarRendimentos();
+            gerarPlanos();
+        } else { window.location.href = "login.html"; }
+    });
+
+    async function carregarDados() {
+        try {
+            const snap = await getDoc(doc(db, "usuarios", uidUsuario));
+            if (snap.exists()) {
+                const dados = snap.data();
+                // Verifica 'saldo' ou 'balance' caso você tenha mudado o nome no banco
+                saldoAtual = Number(dados.saldo || dados.balance) || 0;
+                document.getElementById('user-balance').innerText = `R$ ${saldoAtual.toFixed(2).replace('.', ',')}`;
+            }
+        } catch (e) { console.error("Erro ao carregar saldo:", e); }
+    }
+
+    async function verificarRendimentos() {
+        try {
+            const q = query(collection(db, "investimentos"), 
+                where("userId", "==", uidUsuario),
+                where("status", "==", "ativo")
+            );
+            
+            const snapshot = await getDocs(q);
+            const agora = new Date();
+
+            for (const docInv of snapshot.docs) {
+                const dadosInv = docInv.data();
+                if (!dadosInv.ultimoPagamento) continue;
+
+                const ultimoPag = dadosInv.ultimoPagamento.toDate();
+                const dataExp = dadosInv.dataExpiracao.toDate();
+
+                if (agora > dataExp) {
+                    await updateDoc(doc(db, "investimentos", docInv.id), { status: "finalizado" });
+                    continue;
+                }
+
+                const diffTime = Math.abs(agora - ultimoPag);
+                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+                if (diffDays >= 1) {
+                    const valorPagar = dadosInv.rendimentoDiario * diffDays;
+                    await updateDoc(doc(db, "usuarios", uidUsuario), {
+                        saldoLucro: increment(valorPagar),
+                        totalEarned: increment(valorPagar)
+                    });
+
+                    await updateDoc(doc(db, "investimentos", docInv.id), {
+                        ultimoPagamento: Timestamp.now()
+                    });
+
+                    await addDoc(collection(db, "historico"), {
+                        userId: uidUsuario,
+                        valor: valorPagar,
+                        tipo: "Rendimento",
+                        descricao: `Rendimento ${diffDays} dia(s) - Plano ${dadosInv.plano}`,
+                        data: Timestamp.now()
+                    });
+                }
+            }
+        } catch (error) { console.error("Erro nos rendimentos:", error); }
+    }
+
+    function gerarPlanos() {
+        const container = document.getElementById('container-planos');
+        container.innerHTML = listaPlanos.map(p => `
+            <div class="plan-card">
+                <div class="duration-tag">Ciclo: ${p.dias} Dias</div>
+                <h3>PLANO ${p.nome}</h3>
+                <p class="min-invest">Investimento</p>
+                <div class="price">R$ ${p.valor.toFixed(2).replace('.', ',')}</div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span>Diário</span>
+                        <strong>R$ ${p.diario.toFixed(2).replace('.', ',')}</strong>
+                    </div>
+                    <div class="info-item">
+                        <span>Duração</span>
+                        <strong style="color:var(--gold)">${p.dias} dias</strong>
+                    </div>
+                </div>
+                <div class="total-box">
+                    <span>Retorno Total</span>
+                    <strong>R$ ${p.total.toFixed(2).replace('.', ',')}</strong>
+                </div>
+                <button class="${p.ativo ? 'btn-buy' : 'btn-buy btn-disabled'}" 
+                    onclick="${p.ativo ? `comprarPlano('${p.nome}', ${p.valor}, ${p.diario}, ${p.dias})` : ''}">
+                    ${p.ativo ? 'Ativar Agora' : 'Em Breve'}
+                </button>
+            </div>`).join('');
+    }
+
+    async function processarComissoesRede(valorPlano) {
+        try {
+            const compradorSnap = await getDoc(doc(db, "usuarios", uidUsuario));
+            if (!compradorSnap.exists()) return;
+            
+            const dados = compradorSnap.data();
+            if (dados.jaGerouBonus === true) return;
+
+            const rede = [
+                { id: dados.indicadoPor, pct: 0.10 },      
+                { id: dados.indicadoPorAvo, pct: 0.05 },  
+                { id: dados.indicadoPorBisavo, pct: 0.02 } 
+            ];
+
+            for (let i = 0; i < rede.length; i++) {
+                const indicanteId = rede[i].id;
+                // CORREÇÃO: Verifica se o ID existe e não é vazio antes de criar o doc()
+                if (indicanteId && indicanteId.trim() !== "") {
+                    let porcentagem = rede[i].pct;
+                    
+                    if (i === 0) { 
+                        const paiSnap = await getDoc(doc(db, "usuarios", indicanteId));
+                        if (paiSnap.exists()) {
+                            const count = paiSnap.data().indicadosCount || 0;
+                            if (count >= 50) porcentagem = 0.20;
+                            else if (count >= 10) porcentagem = 0.15;
+                        }
+                    }
+
+                    const bonus = valorPlano * porcentagem;
+                    await updateDoc(doc(db, "usuarios", indicanteId), {
+                        saldoLucro: increment(bonus),
+                        totalComissoes: increment(bonus)
+                    });
+
+                    await addDoc(collection(db, "historico"), {
+                        userId: indicanteId,
+                        valor: bonus,
+                        tipo: "Indicação",
+                        descricao: `Comissão Nível ${i+1} - Referente a ${dados.nome || 'Novo Membro'}`,
+                        data: Timestamp.now()
+                    });
+                }
+            }
+            await updateDoc(doc(db, "usuarios", uidUsuario), { jaGerouBonus: true });
+        } catch (e) { console.error("Erro no processamento de rede:", e); }
+    }
+
+    window.comprarPlano = async (nome, valor, diario, dias) => {
+        try {
+            await carregarDados();
+
+            if (saldoAtual < valor) {
+                return Swal.fire({ 
+                    icon: 'error', 
+                    title: 'Saldo insuficiente', 
+                    text: 'Você precisa de saldo de depósito para ativar planos.',
+                    background: '#1a0505', color: '#fff' 
+                });
+            }
+
+            const confirm = await Swal.fire({
+                title: 'Confirmar Ativação?',
+                text: `Deseja ativar o plano ${nome} por R$ ${valor.toFixed(2).replace('.', ',')}?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#2ecc71',
+                cancelButtonColor: '#e74c3c',
+                confirmButtonText: 'Sim, Ativar!',
+                cancelButtonText: 'Cancelar',
+                background: '#1a0505', color: '#fff'
+            });
+
+            if (confirm.isConfirmed) {
+                Swal.fire({ 
+                    title: 'Processando...', 
+                    allowOutsideClick: false, 
+                    didOpen: () => Swal.showLoading(), 
+                    background: '#1a0505', color: '#fff' 
+                });
+
+                const dataExp = new Date();
+                dataExp.setDate(dataExp.getDate() + dias);
+
+                // 1. REGISTRA O INVESTIMENTO
+                await addDoc(collection(db, "investimentos"), {
+                    userId: uidUsuario,
+                    plano: nome,
+                    valor: valor,
+                    rendimentoDiario: diario,
+                    status: "ativo",
+                    timestamp: Timestamp.now(),
+                    dataExpiracao: Timestamp.fromDate(dataExp),
+                    ultimoPagamento: Timestamp.now()
+                });
+
+                // 2. DESCONTA O SALDO (Tenta os dois nomes de campo comuns)
+                const userRef = doc(db, "usuarios", uidUsuario);
+                const userSnap = await getDoc(userRef);
+                const campoSaldo = userSnap.data().balance !== undefined ? "balance" : "saldo";
+
+                await updateDoc(userRef, { 
+                    [campoSaldo]: increment(-valor) 
+                });
+
+                // 3. HISTÓRICO
+                await addDoc(collection(db, "historico"), {
+                    userId: uidUsuario,
+                    valor: -valor, 
+                    tipo: "Plano Ativado", 
+                    descricao: `Ativação do Plano ${nome}`,
+                    data: Timestamp.now()
+                });
+
+                // 4. BÔNUS DE REDE (Dentro de um try/catch isolado para não travar a compra)
+                try {
+                    await processarComissoesRede(valor);
+                } catch (errRede) {
+                    console.error("Erro ao pagar comissões, mas o plano foi ativado:", errRede);
+                }
+
+                await Swal.fire({ 
+                    icon: 'success', 
+                    title: 'Plano Ativado!', 
+                    text: 'Seu rendimento começará em 24h.', 
+                    timer: 2000, 
+                    showConfirmButton: false, 
+                    background: '#1a0505', color: '#fff' 
+                });
+
+                window.location.href = "home.html";
+            }
+        } catch (e) {
+            console.error("ERRO DETALHADO NA ATIVAÇÃO:", e);
+            Swal.fire({ 
+                icon: 'error', 
+                title: 'Falha na Ativação', 
+                text: 'Houve um erro técnico. Verifique seu saldo e tente novamente.', 
+                background: '#1a0505', color: '#fff' 
+            });
+        }
+    };
+</script>
+</body>
+</html>
