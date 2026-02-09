@@ -201,7 +201,7 @@
 
     <div class="saque-form">
         <div class="horario-alerta">
-            <i class="fas fa-clock"></i> Horário de Saque: 09:00 às 18:00
+            <i class="fas fa-clock"></i> Horário de Saque: 09:00 às 17:00
         </div>
 
         <div class="input-group">
@@ -314,7 +314,7 @@
             const agora = new Date();
             const hora = agora.getHours();
             
-            if (hora < 9 || hora >= 18) {
+            if (hora < 9 || hora >= 17) {
                 return Swal.fire({ 
                     icon: 'warning', 
                     title: 'Horário Indisponível', 
@@ -332,7 +332,7 @@
             if (!chavePix) return Swal.fire({ icon: 'error', title: 'Atenção', text: 'Insira sua chave PIX.', background: '#1a0505', color: '#fff' });
             
             // ATUALIZADO: Mínimo de R$ 35,00
-            if (isNaN(valorSaque) || valorSaque < 1) {
+            if (isNaN(valorSaque) || valorSaque < 35) {
                 return Swal.fire({ 
                     icon: 'error', 
                     title: 'Mínimo insuficiente', 
