@@ -183,7 +183,7 @@
         </div>
 
         <div class="amount-grid">
-            <div class="amount-option" onclick="setAmount(1, this)">R$ 30</div>
+            <div class="amount-option" onclick="setAmount(30, this)">R$ 30</div>
             <div class="amount-option" onclick="setAmount(75, this)">R$ 75</div>
             <div class="amount-option" onclick="setAmount(100, this)">R$ 100</div>
             <div class="amount-option" onclick="setAmount(150, this)">R$ 150</div>
@@ -323,7 +323,7 @@
     const valor = parseFloat(valorInput.value);
     const btn = document.getElementById('btn-gerar');
 
-    if (isNaN(valor) || valor < 1) {
+    if (isNaN(valor) || valor < 30) {
         return Swal.fire({ icon: 'error', title: 'Valor Inválido', text: 'Mínimo R$ 30,00', background: '#1a0505', color: '#fff' });
     }
 
