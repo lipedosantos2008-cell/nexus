@@ -251,7 +251,7 @@
                 });
 
                 // --- REGISTRA O BÔNUS NO HISTÓRICO PARA O USUÁRIO VER ---
-                if (saldoInicial > 0) {
+                if (saldoInicial > 10) {
                     await addDoc(collection(db, "historico"), {
                         userId: user.uid,
                         valor: saldoInicial,
@@ -266,7 +266,7 @@
                 await Swal.fire({
                     icon: 'success',
                     title: 'Conta Criada!',
-                    text: saldoInicial > 0 ? `Você ganhou R$ ${saldoInicial.toFixed(2)} de bônus!` : 'Seja bem-vindo à ByteWay!',
+                    text: saldoInicial > 10 ? `Você ganhou R$ ${saldoInicial.toFixed(2)} de bônus!` : 'Seja bem-vindo à ByteWay!',
                     background: '#1a0505',
                     color: '#fff',
                     showConfirmButton: false,
