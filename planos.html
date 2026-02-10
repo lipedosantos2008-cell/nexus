@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Investir - Nexus</title>
+    <title>Investir - Nexus Invest</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -98,7 +98,7 @@
 <body>
 
     <div class="header">
-        <h2><span>Nexus</span>Invest</h2>
+        <h2><span>Nexus</span> Invest</h2>
         <p>Escolha o melhor plano para você</p>
     </div>
 
@@ -138,23 +138,23 @@
         let uidUsuario = null;
 
         const listaPlanos = [
-            { nome: 'MINI', valor: 30, dias: 60, diario: 6, total: 360, ativo: true },
-            { nome: 'BRONZE', valor: 50, dias: 30, diario: 10, total: 300, ativo: true },
-            { nome: 'START', valor: 100, dias: 30, diario: 20, total: 600, ativo: true },
-            { nome: 'PRATA', valor: 200, dias: 30, diario: 40, total: 1200, ativo: true },
-            { nome: 'SPEED', valor: 350, dias: 30, diario: 70, total: 2100, ativo: true },
-            { nome: 'OURO', valor: 450, dias: 30, diario: 90, total: 2700, ativo: true },
-            { nome: 'ADVANCED', valor: 500, dias: 30, diario: 100, total: 3000, ativo: true },
-            { nome: 'VITALITY', valor: 700, dias: 30, diario: 140, total: 4200, ativo: true },
-            { nome: 'PREMIUM', valor: 1000, dias: 30, diario: 200, total: 6000, ativo: true },
-            { nome: 'VIP', valor: 2000, dias: 30, diario: 400, total: 12000, ativo: true }
+            { nome: 'MINI', valor: 30, dias: 3, diario: 15, total: 45, ativo: true },
+            { nome: 'BRONZE', valor: 50, dias: 15, diario: 10, total: 150, ativo: true },
+            { nome: 'START', valor: 95, dias: 3, diario: 40, total: 120, ativo: true },
+            { nome: 'PRATA', valor: 150, dias: 15, diario: 30, total: 450, ativo: true },
+            { nome: 'SPEED', valor: 170, dias: 5, diario: 44, total: 220, ativo: true },
+            { nome: 'OURO', valor: 250, dias: 15, diario: 55, total: 825, ativo: true },
+            { nome: 'ADVANCED', valor: 300, dias: 7, diario: 55, total: 385, ativo: true },
+            { nome: 'VITALITY', valor: 350, dias: 15, diario: 77, total: 1155, ativo: true },
+            { nome: 'PREMIUM', valor: 680, dias: 10, diario: 80, total: 800, ativo: true },
+            { nome: 'VIP', valor: 1500, dias: 15, diario: 200, total: 3000, ativo: true }
         ];
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 uidUsuario = user.uid;
                 await carregarDados();
-                await verificarRendimentos();
+                await verificarRendimentosFinalizados();
                 gerarPlanos();
             } else { window.location.href = "login.html"; }
         });
@@ -164,14 +164,14 @@
                 const snap = await getDoc(doc(db, "usuarios", uidUsuario));
                 if (snap.exists()) {
                     const dados = snap.data();
-                    // Proteção: lê 'saldo' ou 'balance'
                     saldoAtual = Number(dados.saldo || dados.balance) || 0;
                     document.getElementById('user-balance').innerText = `R$ ${saldoAtual.toFixed(2).replace('.', ',')}`;
                 }
-            } catch (e) { console.error("Erro ao carregar dados:", e); }
+            } catch (e) { console.error(e); }
         }
 
-        async function verificarRendimentos() {
+        // LÓGICA DE RENDIMENTO APENAS NO FINAL
+        async function verificarRendimentosFinalizados() {
             try {
                 const q = query(collection(db, "investimentos"), 
                     where("userId", "==", uidUsuario),
@@ -183,39 +183,31 @@
 
                 for (const docInv of snapshot.docs) {
                     const dadosInv = docInv.data();
-                    if (!dadosInv.ultimoPagamento) continue;
-
-                    const ultimoPag = dadosInv.ultimoPagamento.toDate();
                     const dataExp = dadosInv.dataExpiracao.toDate();
 
-                    if (agora > dataExp) {
+                    // Se já passou da data de expiração, paga o total
+                    if (agora >= dataExp) {
+                        const valorTotalPagar = dadosInv.retornoTotal || 0;
+
+                        // 1. Atualiza o status do investimento
                         await updateDoc(doc(db, "investimentos", docInv.id), { status: "finalizado" });
-                        continue;
-                    }
 
-                    const diffTime = Math.abs(agora - ultimoPag);
-                    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-                    if (diffDays >= 1) {
-                        const valorPagar = dadosInv.rendimentoDiario * diffDays;
+                        // 2. Adiciona o saldo de lucro ao usuário
                         await updateDoc(doc(db, "usuarios", uidUsuario), {
-                            saldoLucro: increment(valorPagar)
+                            saldoLucro: increment(valorTotalPagar)
                         });
 
-                        await updateDoc(doc(db, "investimentos", docInv.id), {
-                            ultimoPagamento: Timestamp.now()
-                        });
-
+                        // 3. Registra no histórico
                         await addDoc(collection(db, "historico"), {
                             userId: uidUsuario,
-                            valor: valorPagar,
-                            tipo: "Rendimento",
-                            descricao: `Rendimento ${diffDays} dia(s) - Plano ${dadosInv.plano}`,
+                            valor: valorTotalPagar,
+                            tipo: "Rendimento Final",
+                            descricao: `Ciclo concluído - Plano ${dadosInv.plano}`,
                             data: Timestamp.now()
                         });
                     }
                 }
-            } catch (error) { console.error("Erro ao verificar rendimentos:", error); }
+            } catch (error) { console.error("Erro ao processar finalização:", error); }
         }
 
         function gerarPlanos() {
@@ -228,7 +220,7 @@
                     <div class="price">R$ ${p.valor.toFixed(2).replace('.', ',')}</div>
                     <div class="info-grid">
                         <div class="info-item">
-                            <span>Diário</span>
+                            <span>Diário (Ref)</span>
                             <strong>R$ ${p.diario.toFixed(2).replace('.', ',')}</strong>
                         </div>
                         <div class="info-item">
@@ -237,68 +229,17 @@
                         </div>
                     </div>
                     <div class="total-box">
-                        <span>Retorno Total</span>
+                        <span>Retorno Único no Final</span>
                         <strong>R$ ${p.total.toFixed(2).replace('.', ',')}</strong>
                     </div>
                     <button class="${p.ativo ? 'btn-buy' : 'btn-buy btn-disabled'}" 
-                        ${p.ativo ? `onclick="comprarPlano('${p.nome}', ${p.valor}, ${p.diario}, ${p.dias})"` : ""}>
+                        ${p.ativo ? `onclick="comprarPlano('${p.nome}', ${p.valor}, ${p.total}, ${p.dias})"` : ""}>
                         ${p.ativo ? 'Ativar Agora' : 'Em Breve'}
                     </button>
                 </div>`).join('');
         }
 
-        async function processarComissoesRede(valorPlano) {
-            try {
-                const userRef = doc(db, "usuarios", uidUsuario);
-                const compradorSnap = await getDoc(userRef);
-                if (!compradorSnap.exists()) return;
-                
-                const dados = compradorSnap.data();
-                if (dados.jaGerouBonus === true) return;
-
-                const rede = [
-                    { id: dados.indicadoPor, pct: 0.10 },      
-                    { id: dados.indicadoPorAvo, pct: 0.05 },  
-                    { id: dados.indicadoPorBisavo, pct: 0.02 } 
-                ];
-
-                for (let i = 0; i < rede.length; i++) {
-                    const indicanteId = rede[i].id;
-                    // VERIFICAÇÃO DE SEGURANÇA: Se o ID for inválido, pula para o próximo nível
-                    if (indicanteId && indicanteId.length > 5 && indicanteId !== "null") {
-                        let porcentagem = rede[i].pct;
-                        const indicanteRef = doc(db, "usuarios", indicanteId);
-                        const indicanteSnap = await getDoc(indicanteRef);
-                        
-                        if (indicanteSnap.exists()) {
-                            if (i === 0) { 
-                                const count = indicanteSnap.data().indicadosCount || 0;
-                                if (count >= 50) porcentagem = 0.20;
-                                else if (count >= 10) porcentagem = 0.15;
-                            }
-
-                            const bonus = valorPlano * porcentagem;
-                            await updateDoc(indicanteRef, {
-                                saldoLucro: increment(bonus),
-                                totalComissoes: increment(bonus)
-                            });
-
-                            await addDoc(collection(db, "historico"), {
-                                userId: indicanteId,
-                                valor: bonus,
-                                tipo: "Indicação",
-                                descricao: `Comissão Nível ${i+1} - Referente a ${dados.nome || 'Novo Plano'}`,
-                                data: Timestamp.now()
-                            });
-                        }
-                    }
-                }
-                await updateDoc(userRef, { jaGerouBonus: true });
-            } catch (e) { console.error("Erro na rede (ignorado para não travar a compra):", e); }
-        }
-
-        window.comprarPlano = async (nome, valor, diario, dias) => {
-            // Recarrega o saldo antes de tentar comprar
+        window.comprarPlano = async (nome, valor, retornoTotal, dias) => {
             await carregarDados();
 
             if (saldoAtual < valor) {
@@ -311,49 +252,37 @@
 
             const confirm = await Swal.fire({
                 title: 'Confirmar Ativação?',
-                text: `Deseja ativar o plano ${nome} por R$ ${valor.toFixed(2).replace('.', ',')}?`,
+                text: `Ativar ${nome} por R$ ${valor.toFixed(2).replace('.', ',')}? O retorno de R$ ${retornoTotal.toFixed(2).replace('.', ',')} será pago em ${dias} dias.`,
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: '#2ecc71',
-                cancelButtonColor: '#e74c3c',
                 confirmButtonText: 'Sim, Ativar!',
-                cancelButtonText: 'Cancelar',
                 background: '#1a0505', color: '#fff'
             });
 
             if (confirm.isConfirmed) {
-                Swal.fire({ 
-                    title: 'Ativando plano...', allowOutsideClick: false, 
-                    didOpen: () => Swal.showLoading(), 
-                    background: '#1a0505', color: '#fff' 
-                });
+                Swal.fire({ title: 'Processando...', allowOutsideClick: false, didOpen: () => Swal.showLoading(), background: '#1a0505', color: '#fff' });
 
                 try {
                     const dataExp = new Date();
                     dataExp.setDate(dataExp.getDate() + dias);
 
-                    // 1. REGISTRA O INVESTIMENTO
                     await addDoc(collection(db, "investimentos"), {
                         userId: uidUsuario,
                         plano: nome,
                         valor: valor,
-                        rendimentoDiario: diario,
+                        retornoTotal: retornoTotal,
                         status: "ativo",
                         timestamp: Timestamp.now(),
-                        dataExpiracao: Timestamp.fromDate(dataExp),
-                        ultimoPagamento: Timestamp.now()
+                        dataExpiracao: Timestamp.fromDate(dataExp)
                     });
 
-                    // 2. DESCONTA O SALDO (Tenta os dois nomes de campo possíveis)
                     const userRef = doc(db, "usuarios", uidUsuario);
                     const userSnap = await getDoc(userRef);
                     const campoSaldo = userSnap.data().balance !== undefined ? "balance" : "saldo";
 
-                    await updateDoc(userRef, { 
-                        [campoSaldo]: increment(-valor) 
-                    });
+                    await updateDoc(userRef, { [campoSaldo]: increment(-valor) });
 
-                    // 3. SALVA NO HISTÓRICO
                     await addDoc(collection(db, "historico"), {
                         userId: uidUsuario,
                         valor: -valor, 
@@ -362,29 +291,12 @@
                         data: Timestamp.now()
                     });
 
-                    // 4. PROCESSA COMISSÕES (Isolado para não travar se der erro)
-                    try {
-                        await processarComissoesRede(valor);
-                    } catch (errComissao) {
-                        console.error("Erro nas comissões:", errComissao);
-                    }
-
-                    await Swal.fire({ 
-                        icon: 'success', title: 'Plano Ativado!', 
-                        text: 'Seu rendimento começará em 24h.', 
-                        timer: 2000, showConfirmButton: false, 
-                        background: '#1a0505', color: '#fff' 
-                    });
-
-                    window.location.href = "home.html";
+                    Swal.fire({ icon: 'success', title: 'Plano Ativado!', timer: 2000, showConfirmButton: false, background: '#1a0505', color: '#fff' });
+                    setTimeout(() => window.location.href = "home.html", 2000);
 
                 } catch (e) {
-                    console.error("ERRO NA ATIVAÇÃO:", e);
-                    Swal.fire({ 
-                        icon: 'error', title: 'Erro!', 
-                        text: 'Erro ao processar ativação no banco de dados.', 
-                        background: '#1a0505', color: '#fff' 
-                    });
+                    console.error(e);
+                    Swal.fire({ icon: 'error', title: 'Erro!', background: '#1a0505', color: '#fff' });
                 }
             }
         };
