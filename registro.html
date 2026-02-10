@@ -250,28 +250,32 @@
                     dataCriacao: new Date().toISOString()
                 });
 
-                // --- REGISTRA O BÔNUS NO HISTÓRICO PARA O USUÁRIO VER ---
-                if (saldoInicial > 10) {
-                    await addDoc(collection(db, "historico"), {
-                        userId: user.uid,
-                        valor: saldoInicial,
-                        tipo: 'Bônus',
-                        descricao: 'Presente de Boas-Vindas',
-                        data: Timestamp.now()
-                    });
-                }
+      // --- REGISTRA O BÔNUS NO HISTÓRICO PARA O USUÁRIO VER ---
+if (saldoInicial > 0) {
+    await addDoc(collection(db, "historico"), {
+        userId: user.uid,
+        valor: saldoInicial,
+        tipo: 'Bônus',
+        descricao: 'Presente de Boas-Vindas',
+        data: Timestamp.now()
+    });
+}
 
-                localStorage.removeItem('padrinho');
+localStorage.removeItem('padrinho');
 
-                await Swal.fire({
-                    icon: 'success',
-                    title: 'Conta Criada!',
-                    text: saldoInicial > 10 ? `Você ganhou R$ ${saldoInicial.toFixed(2)} de bônus!` : 'Seja bem-vindo à ByteWay!',
-                    background: '#1a0505',
-                    color: '#fff',
-                    showConfirmButton: false,
-                    timer: 2000
-                });
+// --- ALERTA DE SUCESSO CORRIGIDO ---
+await Swal.fire({
+    icon: 'success',
+    title: 'Conta Criada!',
+    // Mudamos de > 10 para >= 10 para aparecer a mensagem dos R$ 10,00
+    text: saldoInicial >= 10 
+        ? `Você ganhou R$ ${saldoInicial.toFixed(2)} de bônus!` 
+        : 'Seja bem-vindo à ByteWay!',
+    background: '#1a0505',
+    color: '#fff',
+    showConfirmButton: false,
+    timer: 2000
+});
 
                 window.location.href = "home.html";
 
